@@ -32,32 +32,42 @@ export default function TaskList() {
 
     //Load tasks based on current category
     useEffect(() => {
-        setTasks(allTasks.filter(task => task.categoryId === currentCategory.id));
-    },[currentCategory]);
+        if (currentCategory) { //Add null check
+            setTasks(allTasks.filter(task => task.categoryId === currentCategory.id));
+        }
+    }, [currentCategory, allTasks]);
 
     //Handle renaming of category
-    const updateCategoryName = useCallback((item, newName) => {
-        const newCategories = [];
-        categories.map((category) => {
-            if(category === item) {
-                newCategories.push(newName);
-            } else {
-                newCategories.push(category);
+    const updateCategoryName = useCallback((categoryObject, newName) => {
+        const newCategories = categories.map(category => {
+            if (category.id === categoryObject.id) { //Compare by ID
+                return { ...category, name: newName }; //Return updated object
             }
-        })
-        AsyncStorage.setItem("categories", JSON.stringify(newCategories));
+            return category; //Return unchanged object
+        });
+
+        // Update both state and storage
         setCategories(newCategories);
-    },[]);
+        AsyncStorage.setItem("data", JSON.stringify({
+            categories: newCategories,
+            tasks: allTasks
+        }));
+
+        // Update current category if it was the one being renamed
+        if (currentCategory?.id === categoryObject.id) {
+            setCurrentCategory({ ...categoryObject, name: newName });
+        }
+    }, [categories, allTasks, currentCategory]);
 
     //Change in category
     const navigateToCategory = useCallback((item) => {
         setCurrentCategory(item);
     },[]);
 
-    //Currently selected Category
-    const isSelected = useCallback((category) => {
-        return currentCategory.name === category;
-    },[currentCategory]);
+//Currently selected Category
+    const isSelected = useCallback((categoryName) => {
+        return currentCategory?.name === categoryName; //optional chaining
+    }, [currentCategory]);
 
     //Handles tapping, double tap and long press of categories
     const createGestures = useCallback((item) => {
@@ -70,7 +80,7 @@ export default function TaskList() {
         const doubleTap = Gesture.Tap()
             .numberOfTaps(2)
             .onEnd(() => {
-                if (item === "ToDo" || item ==="Completed") {
+                if (item.name === "ToDo" || item.name ==="Completed") {
                     Alert.alert(
                         "Unable to change the name of this category"
                     )
@@ -92,13 +102,13 @@ export default function TaskList() {
                         }
                     ],
                     "plain-text",
-                    item // Current category name as default
+                    item.name // Current category name as default
                 );
             });
 
         // Combine gestures - double tap takes priority
         return Gesture.Exclusive(doubleTap, singleTap);
-    }, [navigateToCategory]);
+    }, [navigateToCategory, updateCategoryName]);
 
     const categoryButtons = useMemo(() => {
         return categories.map((categoryObject, index) => {
