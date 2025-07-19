@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding:20,
+        padding: 20,
     },
     date: {
         alignItems: 'center',
