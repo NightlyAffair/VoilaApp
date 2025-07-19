@@ -1,30 +1,34 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function LoadDefault() {
-    const categories = {
-        categories: ["ToDo", "Work", "School", "Completed"]
-    }
 
-    const tasks = {
-        "ToDo": [
-            {
+    const data = {
+        categories: [
+            {id: "c1", name: "ToDo", order: 0},
+            {id: "c2", name: "Work", order: 0},
+            {id: "c3", name: "School", order: 0},
+            {id: "c4", name: "Completed", order: 0},
+        ],
+        tasks : [
+            {   id:'t1',
                 title : "Learn to use voila",
                 description : "Learn to use voila",
                 date: new Date(),
-                time: "18:00:00"
+                time: "18:00:00",
+                categoryId: "c1",
             },
-            {
+            {   id:'t2',
                 title : "Enable Shortcuts",
                 description : "Learn to use voila",
                 date: new Date(),
-                time: "18:00:00"
+                time: "18:00:00",
+                categoryId: "c1",
             }
         ]
+
     }
 
-    AsyncStorage.setItem("categories", JSON.stringify(categories))
-    AsyncStorage.setItem("tasks", JSON.stringify(tasks));
-
+    AsyncStorage.setItem("data", JSON.stringify(data))
 }
 
 export default LoadDefault;

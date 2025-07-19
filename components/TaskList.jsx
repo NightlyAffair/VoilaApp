@@ -1,56 +1,65 @@
-import {Text, StyleSheet, TouchableOpacity, View} from "react-native";
+import {Text, StyleSheet, View, Alert} from "react-native";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Task from "./Task";
 import {Gesture, GestureDetector} from "react-native-gesture-handler";
 
 
+
 export default function TaskList() {
 
     //Set to do as the default current category
-    const [currentCategory, setCurrentCategory] = useState("ToDo");
+    const [currentCategory, setCurrentCategory] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [allTasks, setAllTasks] = useState([]);
     const [tasks, setTasks] = useState([]);
-    const [modalVisible, setModalVisible] = useState(false);
 
     //Load all categories on start
     useEffect(() => {
-        const loadCategories= async () => {
-            const saved = JSON.parse(await AsyncStorage.getItem("categories"));
-            if(saved) {
-                setCategories(saved.categories);
+        const loadData = async () => {
+            try {
+                const data = JSON.parse(await AsyncStorage.getItem("data"));
+                setCategories(data.categories);
+                setAllTasks(data.tasks);
+                setCurrentCategory(data.categories[0]);
+            } catch (error) {
+                console.error("Error loading data:", error);
             }
-        }
+        };
 
-        loadCategories();
-    }, [])
+        loadData(); // Call the async function
+    }, []);
 
-
-
-    //Load task for current category
+    //Load tasks based on current category
     useEffect(() => {
-        const loadTasks = async () => {
-            const allTasks = JSON.parse(await AsyncStorage.getItem("tasks"));
-            if(allTasks && allTasks[currentCategory]) {
-                setTasks(allTasks[currentCategory]);
-            } else {
-                setTasks([]);
-            }
-        }
-
-        loadTasks()
+        setTasks(allTasks.filter(task => task.categoryId === currentCategory.id));
     },[currentCategory]);
 
-    console.log(tasks.length);
+    //Handle renaming of category
+    const updateCategoryName = useCallback((item, newName) => {
+        const newCategories = [];
+        categories.map((category) => {
+            if(category === item) {
+                newCategories.push(newName);
+            } else {
+                newCategories.push(category);
+            }
+        })
+        AsyncStorage.setItem("categories", JSON.stringify(newCategories));
+        setCategories(newCategories);
+    },[]);
 
+    //Change in category
     const navigateToCategory = useCallback((item) => {
         setCurrentCategory(item);
     },[]);
 
+    //Currently selected Category
     const isSelected = useCallback((category) => {
-        return currentCategory === category;
+        return currentCategory.name === category;
     },[currentCategory]);
 
+    //Handles tapping, double tap and long press of categories
     const createGestures = useCallback((item) => {
         const singleTap = Gesture.Tap()
             .numberOfTaps(1)
@@ -61,16 +70,40 @@ export default function TaskList() {
         const doubleTap = Gesture.Tap()
             .numberOfTaps(2)
             .onEnd(() => {
-                setModalVisible(true);
+                if (item === "ToDo" || item ==="Completed") {
+                    Alert.alert(
+                        "Unable to change the name of this category"
+                    )
+                    return;
+                }
+                Alert.prompt(
+                    "Edit Category",
+                    "Enter new category name:",
+                    [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                            text: "Save",
+                            onPress: (newName) => {
+                                if (newName && newName.trim()) {
+                                    // Update your category here
+                                    updateCategoryName(item, newName);
+                                }
+                            }
+                        }
+                    ],
+                    "plain-text",
+                    item // Current category name as default
+                );
             });
 
         // Combine gestures - double tap takes priority
-        return Gesture.Race(doubleTap, singleTap);
+        return Gesture.Exclusive(doubleTap, singleTap);
     }, [navigateToCategory]);
 
     const categoryButtons = useMemo(() => {
-        return categories.map((item, index) => {
-            const combinedGesture = createGestures(item);
+        return categories.map((categoryObject, index) => {
+            const item = categoryObject.name;
+            const combinedGesture = createGestures(categoryObject);
 
             return (
                 <GestureDetector gesture={combinedGesture} key={`category-${index}`}>
