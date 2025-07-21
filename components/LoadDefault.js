@@ -16,6 +16,7 @@ function LoadDefault() {
                 date: new Date(),
                 time: "18:00:00",
                 categoryId: "c1",
+                checked: false
             },
             {   id:'t2',
                 title : "Enable Shortcuts",
@@ -23,6 +24,7 @@ function LoadDefault() {
                 date: new Date(),
                 time: "18:00:00",
                 categoryId: "c1",
+                checked: false
             }
         ]
 

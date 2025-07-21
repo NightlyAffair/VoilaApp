@@ -8,7 +8,6 @@ export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
     const [categories, setCategories] = useState([]);
     const [allTasks, setAllTasks] = useState([]);
-    const [tasks, setTasks] = useState([]);
     const [dragState, setDragState] = useState({isDragging: false, targetCategoryId: null});
     const [categoryLayouts, setCategoryLayouts] = useState({});
 
@@ -27,11 +26,10 @@ export default function TaskList() {
         loadData();
     }, []);
 
-    useEffect(() => {
-        if (currentCategory) {
-            setTasks(allTasks.filter(task => task.categoryId === currentCategory.id));
-        }
-    }, [currentCategory, allTasks]);
+    const tasks = useMemo(() => {
+        if (!currentCategory) return [];
+        return allTasks.filter(task => task.categoryId === currentCategory.id);
+    }, [currentCategory?.id, allTasks]);
 
     const updateCategoryName = useCallback((categoryObject, newName) => {
         const newCategories = categories.map(category => {
@@ -109,7 +107,7 @@ export default function TaskList() {
         setDragState({ isDragging , targetCategoryId });
     }, [])
 
-    const handleTaskDrop = useCallback((taskObject, targetCategoryId) => {
+    const changeTaskCategory = useCallback((taskObject, targetCategoryId) => {
         const newTasks = allTasks.map(task => {
             if(task.id === taskObject.id) {
                 return {... taskObject, categoryId: targetCategoryId };
@@ -125,6 +123,32 @@ export default function TaskList() {
             tasks: newTasks,
         }))
     },[allTasks, categories]);
+
+    //Puts the task in completed when checkbox is ticked
+    const handleCheckboxCheck = useCallback((taskObject) => {
+        const category = categories.find(category => category.name === "Completed");
+        const newTask = {... taskObject, checked: true };
+        if (category) {
+            changeTaskCategory(newTask, category.id);
+        }
+    }, [categories, changeTaskCategory]); // Add dependencies
+
+    const handleCheckboxUncheck = useCallback((taskObject) => {
+        const category = categories.find(category => category.name === "ToDo");
+        const newTask = {... taskObject, checked: false };
+        if (category) {
+            changeTaskCategory(newTask, category.id);
+        }
+    },[categories, changeTaskCategory])
+
+    const onDeleteTask = useCallback((taskObject) => {
+        const newTasks = allTasks.filter(task => task.id !== taskObject.id);
+        setAllTasks(newTasks);
+        AsyncStorage.setItem("data", JSON.stringify({
+            categories:categories,
+            tasks: allTasks
+        }))
+    })
 
     return (
         <View style={styles.container}>
@@ -150,9 +174,12 @@ export default function TaskList() {
                         key={`task-${item.id || index}`}
                         taskObject={item}
                         onTap={(task) => console.log('Task tapped:', task.title)}
-                        onDrop={handleTaskDrop}
+                        onDrop={changeTaskCategory}
                         onDragStateChange={handleDragStateChange}
                         categoryLayouts={categoryLayouts}
+                        handleCheckboxCheck={handleCheckboxCheck}
+                        handleCheckboxUncheck={handleCheckboxUncheck}
+                        onDeleteTask={onDeleteTask}
                     />
                 ))}
             </View>
