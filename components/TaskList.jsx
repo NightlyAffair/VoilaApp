@@ -1,89 +1,16 @@
 import {Text, StyleSheet, View, Alert} from "react-native";
 import {useCallback, useEffect, useMemo, useState, useRef} from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Task from "./Task";
-import {Gesture, GestureDetector} from "react-native-gesture-handler";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    runOnJS,
-} from 'react-native-reanimated';
-
-// Separate component for animated category button
-const CategoryButton = ({ categoryObject, index, isSelected, onTap, onDoubleTap, onReorder, totalCategories }) => {
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-    const scale = useSharedValue(1);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: translateX.value },
-            { translateY: translateY.value },
-            { scale: scale.value }
-        ],
-        zIndex: scale.value > 1 ? 999 : 0,
-    }));
-
-    const singleTap = Gesture.Tap()
-        .numberOfTaps(1)
-        .onEnd(() => {
-            runOnJS(onTap)(categoryObject);
-        });
-
-    const doubleTap = Gesture.Tap()
-        .numberOfTaps(2)
-        .onEnd(() => {
-            runOnJS(onDoubleTap)(categoryObject);
-        });
-
-    const longPress = Gesture.Pan()
-        .onStart(() => {
-            scale.value = withSpring(1.1);
-        })
-        .onUpdate((event) => {
-            translateX.value = event.translationX;
-            translateY.value = event.translationY;
-        })
-        .onEnd((event) => {
-            const buttonWidth = 80;
-            const newIndex = Math.round((event.absoluteX - 20) / buttonWidth);
-            const clampedIndex = Math.max(0, Math.min(totalCategories - 1, newIndex));
-
-            if (clampedIndex !== index) {
-                runOnJS(onReorder)(index, clampedIndex);
-            }
-
-            translateX.value = withSpring(0);
-            translateY.value = withSpring(0);
-            scale.value = withSpring(1);
-        });
-
-    const tapGestures = Gesture.Exclusive(doubleTap, singleTap);
-    const combinedGesture = Gesture.Simultaneous(longPress, tapGestures);
-
-    return (
-        <GestureDetector gesture={combinedGesture}>
-            <Animated.View style={[
-                styles.categoryButtons,
-                isSelected ? styles.selectedButton : styles.unselectedButton,
-                animatedStyle
-            ]}>
-                <Text style={[
-                    isSelected ? styles.selectedText : styles.unselectedText
-                ]}>
-                    {categoryObject.name}
-                </Text>
-            </Animated.View>
-        </GestureDetector>
-    );
-};
+import TaskButton from "./TaskButton";
+import CategoryButton from "./CategoryButton";
 
 export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
     const [categories, setCategories] = useState([]);
     const [allTasks, setAllTasks] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [dragState, setDragState] = useState({isDragging: false, targetCategoryId: null});
+    const [categoryLayouts, setCategoryLayouts] = useState({});
 
     useEffect(() => {
         const loadData = async () => {
@@ -169,6 +96,36 @@ export default function TaskList() {
         );
     }, [updateCategoryName]);
 
+
+    const handleCategoryLayout = useCallback((categoryId, layout) => {
+        console.log('Storing layout for category:', categoryId, layout);
+        setCategoryLayouts(prev => ({
+            ...prev,
+            [categoryId]: layout
+        }));
+    }, []);
+
+    const handleDragStateChange = useCallback((isDragging, targetCategoryId) => {
+        setDragState({ isDragging , targetCategoryId });
+    }, [])
+
+    const handleTaskDrop = useCallback((taskObject, targetCategoryId) => {
+        const newTasks = allTasks.map(task => {
+            if(task.id === taskObject.id) {
+                return {... taskObject, categoryId: targetCategoryId };
+            } else {
+                return task;
+            }
+        });
+
+        setAllTasks(newTasks);
+
+        AsyncStorage.setItem("data", JSON.stringify({
+            categories: categories,
+            tasks: newTasks,
+        }))
+    },[allTasks, categories]);
+
     return (
         <View style={styles.container}>
             <View style={styles.categories}>
@@ -182,12 +139,21 @@ export default function TaskList() {
                         onDoubleTap={handleDoubleTap}
                         onReorder={reorderCategories}
                         totalCategories={categories.length}
+                        isDropTarget={dragState.targetCategoryId === categoryObject.id}
+                        onLayout={handleCategoryLayout}
                     />
                 ))}
             </View>
             <View style={styles.tasks}>
                 {tasks.map((item, index) => (
-                    <Task task={item} key={`task-${index}`} />
+                    <TaskButton
+                        key={`task-${item.id || index}`}
+                        taskObject={item}
+                        onTap={(task) => console.log('Task tapped:', task.title)}
+                        onDrop={handleTaskDrop}
+                        onDragStateChange={handleDragStateChange}
+                        categoryLayouts={categoryLayouts}
+                    />
                 ))}
             </View>
         </View>
@@ -201,29 +167,6 @@ const styles = StyleSheet.create({
     categories: {
         flexDirection: "row",
         paddingLeft: 20,
-    },
-    categoryButtons: {
-        paddingVertical: 4,
-        paddingHorizontal: 7,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: 5,
-        borderWidth: 1,
-    },
-    selectedButton: {
-        backgroundColor: '#310069'
-    },
-    unselectedButton: {
-        backgroundColor: 'white'
-    },
-    selectedText: {
-        color: "white",
-        fontWeight: "bold",
-    },
-    unselectedText: {
-        color: "black",
-        fontWeight: "bold",
     },
     tasks: {
         flexDirection: "column",
