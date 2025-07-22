@@ -3,6 +3,7 @@ import {useCallback, useEffect, useMemo, useState, useRef} from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TaskButton from "./TaskButton";
 import CategoryButton from "./CategoryButton";
+import EditTaskModal from "./EditTaskModal";
 
 export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
@@ -148,9 +149,19 @@ export default function TaskList() {
         setAllTasks(newTasks);
         AsyncStorage.setItem("data", JSON.stringify({
             categories:categories,
-            tasks: allTasks
+            tasks: newTasks
         }))
-    })
+    }, [allTasks, categories])
+
+    const onSaveTask = useCallback((taskObject) => {
+        const newTasks = allTasks.filter(task => task.id !== taskObject.id);
+        newTasks.push(taskObject);
+        setAllTasks(newTasks);
+        AsyncStorage.setItem("data", JSON.stringify({
+            categories:categories,
+            tasks: newTasks
+        }))
+    }, [allTasks, categories])
 
 
     return (
@@ -190,8 +201,10 @@ export default function TaskList() {
                 ))}
             </View>
             <EditTaskModal
-                visible={editTaskModalVisible}
+                visibility={editTaskModalVisible}
                 taskObject={editTaskObject}
+                onClose={() => setEditTaskModalVisible(false)}
+                onSaveTask={onSaveTask}
             />
         </View>
     );
