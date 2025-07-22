@@ -10,6 +10,8 @@ export default function TaskList() {
     const [allTasks, setAllTasks] = useState([]);
     const [dragState, setDragState] = useState({isDragging: false, targetCategoryId: null});
     const [categoryLayouts, setCategoryLayouts] = useState({});
+    const [editTaskModalVisible, setEditTaskModalVisible] = useState(false);
+    const [editTaskObject, setEditTaskObject] = useState({});
 
     useEffect(() => {
         const loadData = async () => {
@@ -150,6 +152,7 @@ export default function TaskList() {
         }))
     })
 
+
     return (
         <View style={styles.container}>
             <View style={styles.categories}>
@@ -173,7 +176,10 @@ export default function TaskList() {
                     <TaskButton
                         key={`task-${item.id || index}`}
                         taskObject={item}
-                        onTap={(task) => console.log('Task tapped:', task.title)}
+                        onTap={() =>{
+                            setEditTaskModalVisible(true);
+                            setEditTaskObject(item);
+                        }}
                         onDrop={changeTaskCategory}
                         onDragStateChange={handleDragStateChange}
                         categoryLayouts={categoryLayouts}
@@ -183,6 +189,10 @@ export default function TaskList() {
                     />
                 ))}
             </View>
+            <EditTaskModal
+                visible={editTaskModalVisible}
+                taskObject={editTaskObject}
+            />
         </View>
     );
 }
