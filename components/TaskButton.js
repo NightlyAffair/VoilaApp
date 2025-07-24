@@ -14,24 +14,32 @@ import Animated, {
 
 export default function TaskButton ({taskObject, onTap, onDrop, onDragStateChange, categoryLayouts, handleCheckboxCheck, handleCheckboxUncheck, onDeleteTask}) {
     const [isChecked, setChecked] = useState(false);
-    const [title, setTitle] = useState();
-    const [description, setDescription] = useState();
-    const [date, setDate] = useState();
-    const [time, setTime] = useState();
+    const [title, setTitle] = useState(null);
+    const [description, setDescription] = useState(null);
+    const [date, setDate] = useState(null);
+    const [time, setTime] = useState(null);
 
     useEffect(() => {
         setTitle(taskObject.title);
         setDescription(taskObject.description);
-        setDate(new Date(taskObject.date).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric'
-        }));
-        const [hours, minutes] = taskObject.time.split(':');
-        const hour12 = ((parseInt(hours) + 11) % 12) + 1;
-        const ampm = parseInt(hours) >= 12 ? 'pm' : 'am';
-        setTime(`${hour12}:${minutes}${ampm}`);
-        setChecked(taskObject.checked);
+        if (taskObject.dateTime) {
+            const dateTime = new Date(taskObject.dateTime);
+
+            if (!isNaN(dateTime.getTime())) {
+                setDate(dateTime.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                }));
+
+                setTime(dateTime.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                }));
+            }
+        }
+    setChecked(taskObject.checked);
     },[taskObject])
 
 
@@ -95,7 +103,6 @@ export default function TaskButton ({taskObject, onTap, onDrop, onDragStateChang
     const longPressGesture = Gesture.LongPress()
         .minDuration(500)  // Adjust duration as needed (500ms)
         .onStart(() => {
-            console.log('started long press');
             'worklet';
             isDragging.value = true;
             scale.value = 1.1;
@@ -219,6 +226,17 @@ export default function TaskButton ({taskObject, onTap, onDrop, onDragStateChang
         Gesture.Simultaneous(longPressGesture, swipeAndDragGesture),
         singleTap
     );
+
+
+
+    const dateTimeDisplay = useCallback(() => {
+        if(!date && !time) {
+            return "";
+        } else {
+
+            return `${date} | ${time}`;
+        }
+    }, [date, time]);
     
 
     return (
@@ -235,9 +253,12 @@ export default function TaskButton ({taskObject, onTap, onDrop, onDragStateChang
                 />
                 <View style={styles.task}>
                     <Text style={styles.title}>{title}</Text>
-                    <View style={styles.deadline}>
-                        <Text style={styles.dateTime}>{date} | {time}</Text>
-                    </View>
+                    {
+                        (dateTimeDisplay() !== "") &&
+                        <View style={styles.deadline}>
+                            <Text style={styles.dateTime}>{dateTimeDisplay()}</Text>
+                        </View>
+                    }
                 </View>
             </Animated.View>
         </GestureDetector>
@@ -256,6 +277,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         marginVertical: 5,
+        height: 50
     },
 
     checkbox: {
@@ -281,3 +303,6 @@ const styles = StyleSheet.create({
     },
 
 })
+
+
+

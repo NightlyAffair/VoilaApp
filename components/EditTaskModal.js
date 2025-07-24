@@ -1,45 +1,52 @@
 import {Modal, TextInput, TouchableOpacity, View, Text, StyleSheet, Switch} from "react-native";
 import {useCallback, useState, useEffect} from "react";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
-import { Clock, Calendar, FileText, Bell } from 'lucide-react-native';
+import { Calendar, FileText, Bell } from 'lucide-react-native';
 import {Dropdown} from "react-native-element-dropdown";
 
 
 export default function EditTaskModal({ visibility , taskObject, onClose, onSaveTask}) {
-    const [editTitle, setEditTitle] = useState(taskObject.title);
-    const [editDate, setEditDate] = useState(new Date(taskObject.date));
-    const [editTime, setEditTime] = useState(taskObject.time || "12:00");
-    const [editDescription, setEditDescription] = useState(taskObject.description);
+    const initalTitle = taskObject.title;
+    const [editTitle, setEditTitle] = useState(taskObject.title ? taskObject.title : "");
+    const [editDateTime, setEditDateTime] = useState(
+        taskObject.dateTime ? new Date(taskObject.dateTime) : null
+    );
+    const [editDescription, setEditDescription] = useState(taskObject.description ? taskObject.description : "");
     // Change this to string, not Date
     const [editReminderTime, setEditReminderTime] = useState(taskObject.reminderTime || '0');
 
-    const [dateEnabled, setDateEnabled] = useState(false);
-    const [timeEnabled, setTimeEnabled] = useState(false);
 
     useEffect(() => {
-        setEditTitle(taskObject.title || '');
-        setEditDate(new Date(taskObject.date));
-        setEditTime(taskObject.time || "12:00"); // Keep as string
-        setEditDescription(taskObject.description || '');
+        setEditTitle(taskObject.title ? taskObject.title : "");
+        if (taskObject.dateTime) {
+            setEditDateTime(new Date(taskObject.dateTime));
+        } else {
+            setEditDateTime(null);
+        }
+        setEditDescription(taskObject.description ? taskObject.description : "");
         setEditReminderTime(taskObject.reminderTime || '0');
-    }, [taskObject]);
+    }, [taskObject, visibility]);
 
     useEffect(() => {
-        editDate ? setDateEnabled(true) : setDateEnabled(false);
-    } , [editDate]);
+        if (!editDateTime && editReminderTime !== '0') {
+            setEditReminderTime('0');
+        }
+    }, [editDateTime, editReminderTime]);
+
 
     const saveTask = useCallback(() => {
+        if (!editTitle) {
+            return alert("Please enter a title");
+        }
         const newTask = {...taskObject,
             title:editTitle,
-            date:editDate,
-            time:editTime,
+            dateTime:editDateTime,
             description: editDescription,
             reminderTime:editReminderTime,
         };
         onSaveTask(newTask);
         onClose();
-    },[taskObject, editTitle, editDate, editTime, editDescription, editReminderTime, onSaveTask, onClose])
+    },[taskObject, editTitle, editDateTime, editDescription, editReminderTime, onSaveTask, onClose])
 
     const timeOptions = [
         { label: 'No reminder', value: '0' },
@@ -59,10 +66,18 @@ export default function EditTaskModal({ visibility , taskObject, onClose, onSave
     };
 
     const getDateDisplayText = (editDate) => {
-        if(editDate) {
-            return editDate.toLocaleDateString()
+        if(editDateTime) {
+            return editDateTime.toLocaleDateString()
         } else {
             return "No Date";
+        }
+    }
+
+    const getHeaderDisplayText = () => {
+        if (initalTitle) {
+           return "Edit ToDo"
+        } else {
+            return "Add Todo"
         }
     }
 
@@ -83,69 +98,42 @@ export default function EditTaskModal({ visibility , taskObject, onClose, onSave
                 <View style={styles.container}>
                     {/* Title of container */}
                     <View style={styles.header}>
-                        <Text style={styles.headerText}>Edit ToDo</Text>
+                        <Text style={styles.headerText}>{ getHeaderDisplayText() }</Text>
                     </View>
                     {/* Title editor */}
                     <View style={styles.titleEditor}>
                         <Text style={styles.titleText}>Title</Text>
-                        <TextInput value={editTitle} onChangeText={(e) => setEditTitle(e)} style={styles.titleTextInput}/>
+                        <TextInput value={editTitle} onChangeText={(e) => setEditTitle(e)} style={styles.titleTextInput} autoFocus={true} autoCapitalize={"sentences"}/>
                     </View>
                     {/* Details container */}
                     <View>
                         <Text style={styles.detailsText}>Details</Text>
-                        {/* Date editor */}
+                        {/* DateTime editor */}
                         <View style={styles.datePickerContainer}>
                             <Calendar size={25} color="#666" />
 
-                            <DateTimePicker
-                                value={editDate ? editDate : new Date()}
-                                mode="date"
-                                onChange={(event, selectedDate) => {
-                                    if (selectedDate) setEditDate(selectedDate);
-                                }}
-                            />
-
-                            <Switch
-                                value={dateEnabled}
-                                onValueChange={(value) => {
-                                    setDateEnabled(value);
-                                    if(!value) {
-                                        setEditDate(null);
-                                    }
-                                }}
-                                trackColor={{ false: '#ccc', true: '#007AFF' }}
-                                thumbColor={dateEnabled ? '#fff' : '#f4f3f4'}
-                            />
+                            {editDateTime ? (
+                                // Show DateTimePicker when date is set
+                                <View style={styles.dateTimePickerWrapper}>
+                                    <DateTimePicker
+                                        value={editDateTime}
+                                        mode="datetime"
+                                        onChange={(event, selectedDate) => {
+                                            if (selectedDate) setEditDateTime(selectedDate);
+                                        }}
+                                    />
+                                </View>
+                            ) : (
+                                // Show "Set Date/Time" button when no date is set
+                                <TouchableOpacity
+                                    onPress={() => setEditDateTime(new Date())}
+                                    style={styles.setDateButton}
+                                >
+                                    <Text style={styles.setDateButtonText}>Set Deadline</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
 
-                        {/* Time editor */}
-                        <View style={styles.timePickerContainer}>
-                            <Clock size={25} color="#666" />
-
-                            <DateTimePicker
-                                value={new Date(`2000-01-01T${editTime}:00`)} // Convert string to Date for picker
-                                mode="time"
-                                onChange={(event, selectedTime) => {
-                                    if (selectedTime) {
-                                        // Convert Date back to HH:MM string
-                                        const hours = selectedTime.getHours().toString().padStart(2, '0');
-                                        const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
-                                        setEditTime(`${hours}:${minutes}`);
-                                    }
-                                }}
-                            />
-                            <Switch
-                                value={timeEnabled}
-                                onValueChange={(value) => {
-                                    setTimeEnabled(value);
-                                    if(!value) {
-                                        setEditTime(null);
-                                    }
-                                }}
-                                trackColor={{ false: '#ccc', true: '#007AFF' }}
-                                thumbColor={timeEnabled ? '#fff' : '#f4f3f4'}
-                            />
-                        </View>
 
                         {/* Reminder Editor */}
                         <View style={styles.reminderEditor}>
@@ -158,7 +146,10 @@ export default function EditTaskModal({ visibility , taskObject, onClose, onSave
                                 placeholder="Select reminder time"
                                 value={editReminderTime}
                                 onChange={(item) => {
-                                    setEditReminderTime(item.value);
+                                    editDateTime ? setEditReminderTime(item.value) : setEditReminderTime(0);
+                                    if (!editDateTime) {
+                                        alert("Please set a deadline first")
+                                    }
                                 }}
                             />
                         </View>
@@ -169,7 +160,11 @@ export default function EditTaskModal({ visibility , taskObject, onClose, onSave
                                 setEditDescription(e)} style={styles.descriptionEditor}
                                 placeholder="Add description..."
                                 multiline={true}              // Important for multi-line text
-                                textAlignVertical="top" />
+                                textAlignVertical="top"
+                                   returnKeyType="done"
+                                   submitBehavior="blurAndSubmit"
+                                       scrollEnabled={true}
+                            />
                         </View>
                     </View>
                     <View style={styles.footer}>
@@ -313,7 +308,22 @@ const styles = StyleSheet.create({
     },
     buttonTextCancel: {
         alignSelf: "center"
-    }
+    },
+    setDateButton: {
+        marginLeft: 10,
+        backgroundColor: 'purple',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        borderRadius: 5,
+        flex: 1,
+        marginRight: 30,
+    },
+    setDateButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+
 
 
 })

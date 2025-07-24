@@ -1,9 +1,10 @@
-import {Text, StyleSheet, View, Alert} from "react-native";
+import {Text, StyleSheet, View, Alert, TouchableOpacity} from "react-native";
 import {useCallback, useEffect, useMemo, useState, useRef} from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TaskButton from "./TaskButton";
 import CategoryButton from "./CategoryButton";
 import EditTaskModal from "./EditTaskModal";
+import { Plus } from 'lucide-react-native';
 
 export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
@@ -154,14 +155,44 @@ export default function TaskList() {
     }, [allTasks, categories])
 
     const onSaveTask = useCallback((taskObject) => {
-        const newTasks = allTasks.filter(task => task.id !== taskObject.id);
-        newTasks.push(taskObject);
+        let taskFound = false;
+        const newTasks = allTasks.map(
+            task => {
+                if(task.id === taskObject.id) {
+                    taskFound = true;
+                    return taskObject;
+                }
+                return task;
+            }
+        )
+        if (!taskFound) {
+            newTasks.unshift(taskObject);
+        }
         setAllTasks(newTasks);
         AsyncStorage.setItem("data", JSON.stringify({
             categories:categories,
             tasks: newTasks
         }))
     }, [allTasks, categories])
+
+    const generateShortId = () => {
+        return 'xxxx-xxxx-xxxx'.replace(/[x]/g, function() {
+            return (Math.random() * 16 | 0).toString(16);
+        });
+    };
+
+    const newTaskObject = () => {
+        //Create a null task
+        return ({
+            id: generateShortId(),
+            title: null,
+            description: null,
+            dateTime: null,
+            categoryId: "c1",
+            checked: false,
+            reminderTime: null
+        })
+    }
 
 
     return (
@@ -200,6 +231,12 @@ export default function TaskList() {
                     />
                 ))}
             </View>
+            <TouchableOpacity onPress={() => {
+                setEditTaskModalVisible(true);
+                setEditTaskObject(newTaskObject());
+            }} style={styles.addButton}>
+                <Plus size={20} color={"white"}/>
+            </TouchableOpacity>
             <EditTaskModal
                 visibility={editTaskModalVisible}
                 taskObject={editTaskObject}
@@ -223,5 +260,31 @@ const styles = StyleSheet.create({
         marginTop: 15,
         alignSelf: "center",
         width: "90%",
+    },
+    addButton: {
+        backgroundColor: "purple",
+        height: 60,  // Made it bigger for better touch target
+        width: 60,
+        borderRadius: 30,  // Half of width/height for perfect circle
+        alignItems: "center",
+        justifyContent: "center",
+        position: 'absolute',  // Position absolutely
+        bottom: 40,            // Distance from bottom
+        alignSelf: 'flex-start',   // Center horizontally
+        right: 40,
+
+        // 3D floating effect
+        elevation: 8,           // Android shadow
+        shadowColor: '#000',    // iOS shadow
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+
+        // Optional: Add a subtle gradient effect with a border
+        borderWidth: 0.5,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
     }
 })
