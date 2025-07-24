@@ -18,7 +18,7 @@ export default function HomeScreen({navigation}) {
         >
             <View style={styles.container}>
                 <SafeAreaView style={styles.safeView} />
-                <Header />
+                <Header navigation={navigation} />
                 <TaskList />
             </View>
         </ImageBackground>

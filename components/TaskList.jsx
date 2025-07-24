@@ -7,6 +7,7 @@ import EditTaskModal from "./EditTaskModal";
 import { Plus } from 'lucide-react-native';
 import Animated, {Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated";
 import {Gesture, GestureDetector} from "react-native-gesture-handler";
+import scheduleNotification from './NotificationHandler'
 
 export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
@@ -156,23 +157,30 @@ export default function TaskList() {
         }))
     }, [allTasks, categories])
 
-    const onSaveTask = useCallback((taskObject) => {
+    const onSaveTask = useCallback(async (taskObject) => {
         let taskFound = false;
+        let newTask;
+
+        //Schedule noti if any
+        if (taskObject.reminderTime) {
+            const notificationId = await setReminderNotifications(taskObject);
+            newTask = {...taskObject, notificationId: notificationId};
+        } else{newTask = taskObject;}
         const newTasks = allTasks.map(
             task => {
-                if(task.id === taskObject.id) {
+                if (task.id === newTask.id) {
                     taskFound = true;
-                    return taskObject;
+                    return newTask;
                 }
                 return task;
             }
         )
         if (!taskFound) {
-            newTasks.unshift(taskObject);
+            newTasks.unshift(newTask);
         }
         setAllTasks(newTasks);
         AsyncStorage.setItem("data", JSON.stringify({
-            categories:categories,
+            categories: categories,
             tasks: newTasks
         }))
     }, [allTasks, categories])
@@ -195,6 +203,21 @@ export default function TaskList() {
             reminderTime: null
         })
     }
+
+    const setReminderNotifications = (taskObject) => {
+        if(taskObject.reminderTime && taskObject.dateTime) {
+            return scheduleNotification(
+                taskObject.title,
+                taskObject.description ? taskObject.description : "",
+                calculateNotificationTime(taskObject.dateTime, taskObject.reminderTime)
+            )
+        }
+    }
+
+    const calculateNotificationTime = (eventDateTime, reminderMinutes) => {
+        const millisecondsToSubtract = reminderMinutes * 60 * 1000; // Convert minutes to milliseconds
+        return new Date(eventDateTime.getTime() - millisecondsToSubtract);
+    };
 
     const translateX  = useSharedValue(0);
 

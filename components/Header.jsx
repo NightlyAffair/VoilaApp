@@ -2,7 +2,7 @@ import {View, Text, StyleSheet, TouchableOpacity} from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 
 
-export default function Header() {
+export default function Header({navigation}) {
 
     const today = new Date();
     const day = today.getDate().toString().padStart(2, '0');
@@ -10,6 +10,9 @@ export default function Header() {
     const year = today.getFullYear();
     const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
 
+    const handleSettingsPress= () => {
+        navigation.navigate('Settings');
+    }
 
     return (
         <View style={styles.container}>
@@ -19,7 +22,7 @@ export default function Header() {
                     <Text>{day}/{month}/{year}</Text>
                     <Text>{dayName}</Text>
                 </View>
-                <TouchableOpacity onPress={() => {handleSettingsPress}}>
+                <TouchableOpacity onPress={() => {handleSettingsPress()}}>
                     <Ionicons name="settings" size={24} color="black" />
                 </TouchableOpacity>
             </View>
