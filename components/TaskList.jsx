@@ -1,10 +1,12 @@
-import {Text, StyleSheet, View, Alert, TouchableOpacity} from "react-native";
+import {Text, StyleSheet, View, Alert, TouchableOpacity, Dimensions} from "react-native";
 import {useCallback, useEffect, useMemo, useState, useRef} from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TaskButton from "./TaskButton";
 import CategoryButton from "./CategoryButton";
 import EditTaskModal from "./EditTaskModal";
 import { Plus } from 'lucide-react-native';
+import Animated, {Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated";
+import {Gesture, GestureDetector} from "react-native-gesture-handler";
 
 export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
@@ -194,6 +196,43 @@ export default function TaskList() {
         })
     }
 
+    const translateX  = useSharedValue(0);
+
+    const { width: screenWidth } = Dimensions.get('window');
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        flex: 1,
+        width: '100%',
+        transform : [{translateX: translateX.value}]
+    }))
+
+// Simple approach - just change category immediately
+    const swipeGesture = Gesture.Pan()
+        .onUpdate((event) => {
+            translateX.value = event.translationX;
+        })
+        .onEnd((event) => {
+            const currentIndex = categories.findIndex((cat) => cat.id === currentCategory.id);
+            const threshold = 30;
+
+            if (Math.abs(event.translationX) > threshold) {
+                let nextIndex;
+
+                if (event.translationX < 0 && currentIndex < categories.length - 1) {
+                    // Swiping left - go to next category
+                    nextIndex = currentIndex + 1;
+                    runOnJS(navigateToCategory)(categories[nextIndex]);
+                    console.log(currentIndex);
+                } else if (event.translationX > 0 && currentIndex > 0) {
+                    // Swiping right - go to previous category
+                    nextIndex = currentIndex - 1;
+                    runOnJS(navigateToCategory)(categories[nextIndex]);
+                }
+            }
+
+            // Always reset position
+            translateX.value = withTiming(0, { duration: 300 });
+        });
 
     return (
         <View style={styles.container}>
@@ -213,24 +252,29 @@ export default function TaskList() {
                     />
                 ))}
             </View>
-            <View style={styles.tasks}>
-                {tasks.map((item, index) => (
-                    <TaskButton
-                        key={`task-${item.id || index}`}
-                        taskObject={item}
-                        onTap={() =>{
-                            setEditTaskModalVisible(true);
-                            setEditTaskObject(item);
-                        }}
-                        onDrop={changeTaskCategory}
-                        onDragStateChange={handleDragStateChange}
-                        categoryLayouts={categoryLayouts}
-                        handleCheckboxCheck={handleCheckboxCheck}
-                        handleCheckboxUncheck={handleCheckboxUncheck}
-                        onDeleteTask={onDeleteTask}
-                    />
-                ))}
-            </View>
+
+            <GestureDetector gesture={swipeGesture}>
+                <Animated.View style={[animatedStyle]}>
+                    <View style={styles.tasks}>
+                        {tasks.map((item, index) => (
+                            <TaskButton
+                                key={`task-${item.id || index}`}
+                                taskObject={item}
+                                onTap={() =>{
+                                    setEditTaskModalVisible(true);
+                                    setEditTaskObject(item);
+                                }}
+                                onDrop={changeTaskCategory}
+                                onDragStateChange={handleDragStateChange}
+                                categoryLayouts={categoryLayouts}
+                                handleCheckboxCheck={handleCheckboxCheck}
+                                handleCheckboxUncheck={handleCheckboxUncheck}
+                                onDeleteTask={onDeleteTask}
+                            />
+                        ))}
+                    </View>
+                </Animated.View>
+            </GestureDetector>
             <TouchableOpacity onPress={() => {
                 setEditTaskModalVisible(true);
                 setEditTaskObject(newTaskObject());

@@ -31,6 +31,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     safeView: {
+        marginTop: 30,
         backgroundColor: "#fff",
     },
     container: {
