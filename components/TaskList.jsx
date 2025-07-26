@@ -232,7 +232,8 @@ export default function TaskList() {
                     return scheduleNotification(
                         taskObject.title,
                         taskObject.description ? taskObject.description : "",
-                        notificationTime
+                        notificationTime,
+                        taskObject.id
                     );
                 }
             }

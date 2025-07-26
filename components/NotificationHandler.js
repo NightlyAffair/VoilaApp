@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 
-const scheduleNotification = async (title, body, triggerTime) => {
+const scheduleNotification = async (title, body, triggerTime, taskId) => {
     try {
 
 
@@ -15,7 +15,7 @@ const scheduleNotification = async (title, body, triggerTime) => {
             content: {
                 title: title,
                 body: body,
-                categoryIdentifier: 'task_reminder'
+                categoryIdentifier: 'task_reminder',
             },
             trigger: {
                 date: new Date(triggerTime), // Date object
