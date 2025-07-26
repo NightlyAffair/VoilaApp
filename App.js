@@ -28,7 +28,13 @@ export default function App() {
     useEffect(() => {
         setupNotifications();
         setupNotificationCategories();
+
     }, []);
+
+
+
+
+
 
     const setupNotifications = async () => {
         // Check if we already asked for permissions

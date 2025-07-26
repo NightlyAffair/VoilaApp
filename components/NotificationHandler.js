@@ -22,6 +22,9 @@ const scheduleNotification = async (title, body, triggerTime, taskId) => {
             content: {
                 title: title,
                 body: body,
+                data: {
+                    taskId : taskId,
+                },
                 categoryIdentifier: 'task_reminder',
             },
             trigger: {

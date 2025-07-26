@@ -8,6 +8,7 @@ import { Plus } from 'lucide-react-native';
 import Animated, {Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated";
 import {Gesture, GestureDetector} from "react-native-gesture-handler";
 import scheduleNotification from './NotificationHandler'
+import * as Notifications from "expo-notifications";
 
 export default function TaskList() {
     const [currentCategory, setCurrentCategory] = useState(null);
@@ -241,6 +242,35 @@ export default function TaskList() {
         return null;
     };
 
+    useEffect(() => {
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+            handleNotificationResponse(response);
+        });
+        return () => {
+            if (notificationListener.current) {
+                notificationListener.current.remove();
+            }
+        }
+    }, []);
+
+    //Handle notifications callback
+    const handleNotificationResponse = (response) => {
+        const { notification, actionIdentifier } = response;
+        const taskId = notification.request.content.data?.taskId;
+
+        if(!taskId) {
+            return
+        }
+
+        switch(actionIdentifier) {
+            case "complete":
+                handleCheckboxCheck(categories.find(cat => cat.id === taskId));
+        }
+
+
+
+    }
+
     const translateX  = useSharedValue(0);
 
     const { width: screenWidth } = Dimensions.get('window');
@@ -251,7 +281,7 @@ export default function TaskList() {
         transform : [{translateX: translateX.value}]
     }))
 
-// Simple approach - just change category immediately
+    // Simple approach - just change category immediately
     const swipeGesture = Gesture.Pan()
         .onUpdate((event) => {
             translateX.value = event.translationX;
