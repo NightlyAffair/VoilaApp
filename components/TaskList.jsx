@@ -203,19 +203,41 @@ export default function TaskList() {
         })
     }
 
+    const calculateNotificationTime = (eventDateTime, reminderMinutes) => {
+        // Ensure eventDateTime is a Date object
+        const eventDate = eventDateTime instanceof Date ? eventDateTime : new Date(eventDateTime);
+
+        // Convert reminderMinutes string to number
+        const reminderMinutesNum = parseInt(reminderMinutes, 10);
+
+        // If reminderMinutes is 0 or invalid, return null
+        if (!reminderMinutesNum || reminderMinutesNum === 0) {
+            return null;
+        }
+
+        const millisecondsToSubtract = reminderMinutesNum * 60 * 1000;
+        return new Date(eventDate.getTime() - millisecondsToSubtract);
+    };
+
+// Also update setReminderNotifications to handle the conversion:
     const setReminderNotifications = (taskObject) => {
         if(taskObject.reminderTime && taskObject.dateTime) {
-            return scheduleNotification(
-                taskObject.title,
-                taskObject.description ? taskObject.description : "",
-                calculateNotificationTime(taskObject.dateTime, taskObject.reminderTime)
-            )
-        }
-    }
+            const reminderTimeNum = parseInt(taskObject.reminderTime, 10);
 
-    const calculateNotificationTime = (eventDateTime, reminderMinutes) => {
-        const millisecondsToSubtract = reminderMinutes * 60 * 1000; // Convert minutes to milliseconds
-        return new Date(eventDateTime.getTime() - millisecondsToSubtract);
+            // Only schedule if reminder time is valid and greater than 0
+            if (reminderTimeNum > 0) {
+                const notificationTime = calculateNotificationTime(taskObject.dateTime, taskObject.reminderTime);
+
+                if (notificationTime) {
+                    return scheduleNotification(
+                        taskObject.title,
+                        taskObject.description ? taskObject.description : "",
+                        notificationTime
+                    );
+                }
+            }
+        }
+        return null;
     };
 
     const translateX  = useSharedValue(0);
