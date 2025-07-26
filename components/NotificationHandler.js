@@ -2,11 +2,6 @@ import * as Notifications from 'expo-notifications';
 
 const scheduleNotification = async (title, body, triggerTime) => {
     try {
-        console.log('Current time:', now.toLocaleString());
-        console.log('Trigger time received:', triggerTime);
-        console.log('Trigger time as Date:', new Date(triggerTime).toLocaleString());
-        console.log('Time difference (ms):', new Date(triggerTime).getTime() - now.getTime());
-        console.log('Time difference (minutes):', (new Date(triggerTime).getTime() - now.getTime()) / (1000 * 60));
 
 
         // Check if we have permission first

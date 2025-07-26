@@ -114,7 +114,6 @@ export default function TaskButton ({taskObject, onTap, onDrop, onDragStateChang
 
 
     const swipeAndDragGesture = Gesture.Pan()
-        .activeOffsetX([-30, 30])  // Require 30px horizontal movement to activate
         .onUpdate((event) => {
             'worklet';
 

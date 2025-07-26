@@ -118,10 +118,11 @@ export default function EditTaskModal({ visibility , taskObject, onClose, onSave
                                     <DateTimePicker
                                         value={editDateTime}
                                         mode="datetime"
-                                        display="default"
+                                        display="compact"
                                         onChange={(event, selectedDate) => {
                                             if (selectedDate) setEditDateTime(selectedDate);
                                         }}
+                                        themeVariant="light"
                                     />
                                 </View>
                             ) : (

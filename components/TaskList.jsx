@@ -103,7 +103,6 @@ export default function TaskList() {
 
 
     const handleCategoryLayout = useCallback((categoryId, layout) => {
-        console.log('Storing layout for category:', categoryId, layout);
         setCategoryLayouts(prev => ({
             ...prev,
             [categoryId]: layout
@@ -245,7 +244,6 @@ export default function TaskList() {
                     // Swiping left - go to next category
                     nextIndex = currentIndex + 1;
                     runOnJS(navigateToCategory)(categories[nextIndex]);
-                    console.log(currentIndex);
                 } else if (event.translationX > 0 && currentIndex > 0) {
                     // Swiping right - go to previous category
                     nextIndex = currentIndex - 1;
@@ -277,8 +275,8 @@ export default function TaskList() {
             </View>
 
             <GestureDetector gesture={swipeGesture}>
-                <Animated.View style={[animatedStyle]}>
-                    <View style={styles.tasks}>
+                <Animated.View style={[animatedStyle, {zIndex: 0}]} >
+                    <View style={[styles.tasks, {zIndex: 1}]}>
                         {tasks.map((item, index) => (
                             <TaskButton
                                 key={`task-${item.id || index}`}

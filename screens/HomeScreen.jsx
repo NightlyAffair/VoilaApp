@@ -27,7 +27,7 @@ export default function HomeScreen({navigation}) {
 
 const styles = StyleSheet.create({
     backgroundImage: {
-        height: '100%',
+        height: '100%', 
         backgroundColor: '#fff',
     },
     safeView: {
