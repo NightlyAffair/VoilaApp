@@ -242,15 +242,27 @@ export default function TaskList() {
         return null;
     };
 
+    const notificationListener = useRef();
+    const responseListener = useRef();
+
     useEffect(() => {
+        // Listen for notifications received while app is running
+        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+        });
+
+        // Listen for user interactions with notifications
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
             handleNotificationResponse(response);
         });
+
         return () => {
             if (notificationListener.current) {
                 notificationListener.current.remove();
             }
-        }
+            if (responseListener.current) {
+                responseListener.current.remove();
+            }
+        };
     }, []);
 
     //Handle notifications callback
@@ -258,17 +270,17 @@ export default function TaskList() {
         const { notification, actionIdentifier } = response;
         const taskId = notification.request.content.data?.taskId;
 
+        console.log(taskId);
+
         if(!taskId) {
+            console.log("taskid not present")
             return
         }
 
         switch(actionIdentifier) {
             case "complete":
-                handleCheckboxCheck(categories.find(cat => cat.id === taskId));
+                handleCheckboxCheck(allTasks.find(task => task.id === taskId));
         }
-
-
-
     }
 
     const translateX  = useSharedValue(0);

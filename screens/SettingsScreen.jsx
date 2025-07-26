@@ -19,7 +19,8 @@ export default function SettingsScreen({navigation, route})
         const id = await scheduleNotification(
             "Test from Settings 🧪",
             "Your notifications are working!",
-            testTime
+            testTime,
+            "t1"
         );
 
     };
