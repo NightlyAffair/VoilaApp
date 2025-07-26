@@ -6,6 +6,10 @@ import { useEffect, useState } from "react";
 import LoadDefault from "./components/LoadDefault";
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import 'react-native-gesture-handler';
+import { enableScreens } from 'react-native-screens';
+
+enableScreens();
 
 //Configure how notifications should be displayed
 Notifications.setNotificationHandler({
